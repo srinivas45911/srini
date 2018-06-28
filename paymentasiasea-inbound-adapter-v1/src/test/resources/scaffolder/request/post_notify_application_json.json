@@ -1,0 +1,8 @@
+{
+  "gatewayspecificfieldx" : "x",
+  "gatewayspecificfieldy" : "y",
+  "gatewayspecificfieldz" : "z",
+  "payment_ccy" : "USD",
+  "payment_amount" : 73.57,
+  "etc": "etc..."
+}

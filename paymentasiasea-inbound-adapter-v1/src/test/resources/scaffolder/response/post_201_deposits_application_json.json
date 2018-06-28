@@ -1,0 +1,14 @@
+{
+  "OrderId" : 987654,
+  "ClientRedirectURL" : "https://gateway.com/completepayment",
+  "ClientRedirectType" : "POST",
+  "PostParameters" : "OrderId=987654&CustomFieldX=somevalue",
+  "PostPayload" : "",
+  "RecommendedDisplayType" : "Redirect",
+  "RecommendedDisplayWidth" : 0,
+  "RecommendedDisplayHeight" : 0,
+  "PaymentStatus" : "REDIRECT",
+  "PaymentCode": "",
+  "PaymentMessage": ""
+  "AdditionalInfo" : {}
+}

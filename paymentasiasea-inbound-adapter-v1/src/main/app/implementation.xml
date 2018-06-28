@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+    <flow name="implementation-for-paymentasiasea-deposit_Flow">
+        <logger message="#['Request Header \n http.request.uri = ' +message.inboundProperties.'http.request.uri'+  '\n content-length = '+message.inboundProperties.'content-length' +  '\n http.query.string = '+message.inboundProperties.'http.query.string'+  '\n accept-language = '+message.inboundProperties.'accept-language'+  '\n postman-token = '+message.inboundProperties.'postman-token'+  '\n http.query.params = '+message.inboundProperties.'http.query.params'+  '\n http.listener.path = '+message.inboundProperties.'http.listener.path'+  '\n http.uri.params = '+message.inboundProperties.'http.uri.params'+  '\n host = '+message.inboundProperties.'host'+  '\n content-type = '+message.inboundProperties.'content-type'+  '\n http.method = '+message.inboundProperties.'http.method'+  '\n caccept-encoding = '+message.inboundProperties.'accept-encoding'+  '\n http.relative.path = '+message.inboundProperties.'http.relative.path'+  '\n http.request.path = '+message.inboundProperties.'http.request.path']  #['\n \n Request Payload is :  \n' +message.payloadAs(java.lang.String)]" level="INFO" category="PaymentAsiaSEA Deposits | Request Payload" doc:name="Deposits Request Payload" doc:description="Deposits request payload logger"/>
+        <byte-array-to-string-transformer doc:name="Transform Request Payload" doc:description="Transformation(Byte array to string) of  input ."/>
+        <scripting:transformer doc:name="Transform Deposits Response" doc:description="Request Example:  [LegalEntity:AxiCorp Limited, AdditionalInfo:[ClientFirstName:Someone, ClientLastName:Buying, ClientPhone:9876543223, ClientAddress:1,Bay Street, ClientEmail:someone@gmail.com, ClientCountry:US, ClientState:NY], Amount:100.0, Currency:MYR, SystemSourceId:6, ProductId:287, CustomerId:123456, OrderId:119876541245081, ClientSessionId:QWE!@#wasdferty, InstrumentToken:, ClientIp:123.123.123.123]   Output from Groovy: {&quot;OrderId&quot;:119876541245081,&quot;ClientRedirectURL&quot;:&quot;https://payment.pa-sys.com/app/page/3f&quot;,&quot;ClientRedirectType&quot;:&quot;POST&quot;,&quot;PostParameters&quot;:&quot;amount=100.0&amp;currency=MYR&amp;customer_address=1,Bay Street&amp;customer_country=US&amp;customer_email=someone@gmail.com&amp;customer_first_name=Someone&amp;customer_ip=123.123.123.123&amp;customer_last_name=Buying&amp;customer_phone=9876543223&amp;customer_state=NY&amp;merchant_reference=119876541245081&amp;return_url=https://demo.shop.com/payment/return359488bd-50a8-429e-991f-91033914830c&amp;sign=f86c947f33b15408c3d11f8677f0724618b9243f0dd0525a6003c70c64b68349dbca2cb13">
+            <scripting:script engine="Groovy"><![CDATA[import java.security.MessageDigest
+import groovy.json.*
+
+def result = new JsonBuilder()
+String return_Url= "${return_url}"
+String network="${network}"
+String client_Redirect_Type = "${ClientRedirectType}"
+String client_Redirect_URL="${Gateway.Hosted.DepositURL}${merchantToken}"
+String recommended_Display_Type= "${RecommendedDisplayType}"
+String merchant_Secret="${merchant.secret}"
+String post_Param=""
+def set_Payload=payload //(see example in notes)
+input_Payload = new JsonSlurper().setType(JsonParserType.LAX).parseText(set_Payload)
+
+if(!(input_Payload.AdditionalInfo.ProductSelected == "" || input_Payload.AdditionalInfo.ProductSelected == null))
+{
+	network=input_Payload.AdditionalInfo.ProductSelected
+}
+
+Map<String, String> request_Map = new HashMap<String, String>();
+    request_Map.put("amount", input_Payload.Amount ?: '');
+    request_Map.put("currency", input_Payload.Currency ?: '')   
+    request_Map.put("customer_first_name", input_Payload.AdditionalInfo.ClientFirstName ?: '');
+    request_Map.put("customer_last_name", input_Payload.AdditionalInfo.ClientLastName ?: '');   
+    request_Map.put("customer_country", input_Payload.AdditionalInfo.ClientCountry ?: '');
+    request_Map.put("customer_state", input_Payload.AdditionalInfo.ClientState ?: '')   
+    request_Map.put("customer_address", input_Payload.AdditionalInfo.ClientAddress ?: '');
+    request_Map.put("customer_ip", input_Payload.ClientIp ?: '')   
+    request_Map.put("customer_phone", input_Payload.AdditionalInfo.ClientPhone ?: '');
+    request_Map.put("return_url", return_Url ?: '');   
+    request_Map.put("network", network ?: '');
+    request_Map.put("merchant_reference", input_Payload.OrderId ?: '');
+    request_Map.put("customer_email", input_Payload.AdditionalInfo.ClientEmail ?: '');
+def sorted_Map=request_Map.sort()
+String query_String=""
+
+for(key in sorted_Map)
+{              
+	post_Param=post_Param+( key.getKey()+"="+key.getValue().toString()+"&")
+    query_String = query_String + ( key.getKey()+"="+java.net.URLEncoder.encode(key.getValue().toString(), "UTF-8")+"&")
+}
+
+post_Param= post_Param.substring(0, post_Param.length()-1)
+String stringToBeHashed = query_String.substring(0, query_String.length()-1) + merchant_Secret;
+String sign_Msg = MessageDigest.getInstance("SHA-512").digest(stringToBeHashed.getBytes("UTF-8")).encodeHex().toString()  
+post_Param += "&sign=" + sign_Msg
+
+result OrderId: input_Payload.OrderId, ProviderReference:"", ClientRedirectURL:client_Redirect_URL, ClientRedirectType:client_Redirect_Type, PostParameters :post_Param, PostPayload : "", RecommendedDisplayType : recommended_Display_Type, RecommendedDisplayWidth : 0, RecommendedDisplayHeight : 0, PaymentStatus : "REDIRECT", PaymentCode: "", PaymentMessage: "", AdditionalInfo : {}
+return result.toString()
+]]></scripting:script>
+        </scripting:transformer>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <logger message="#[payload]" level="INFO" category="PaymentAsiaSEA Deposits  | Response Payload" doc:name="Deposits Response Payload" doc:description="Deposit response payload logger"/>
+
+    </flow>
+   
+    <flow name="implementation-for-paymentasiasea-withdrawal_RequestFlow">
+        <logger message="#['Request Header \n http.request.uri = ' +message.inboundProperties.'http.request.uri'+  '\n content-length = '+message.inboundProperties.'content-length' +  '\n http.query.string = '+message.inboundProperties.'http.query.string'+  '\n accept-language = '+message.inboundProperties.'accept-language'+  '\n postman-token = '+message.inboundProperties.'postman-token'+  '\n http.query.params = '+message.inboundProperties.'http.query.params'+  '\n http.listener.path = '+message.inboundProperties.'http.listener.path'+  '\n http.uri.params = '+message.inboundProperties.'http.uri.params'+  '\n host = '+message.inboundProperties.'host'+  '\n content-type = '+message.inboundProperties.'content-type'+  '\n http.method = '+message.inboundProperties.'http.method'+  '\n caccept-encoding = '+message.inboundProperties.'accept-encoding'+  '\n http.relative.path = '+message.inboundProperties.'http.relative.path'+  '\n http.request.path = '+message.inboundProperties.'http.request.path']  #['\n \n Request Payload is :  \n' +message.payloadAs(java.lang.String)]" level="INFO" category="PaymentAsiaSEA Withdrawals | RequestIn Payload" doc:name="Withdrawals RequestIn Payload" doc:description="Withdrawals requestIn payload logger"/>
+        <byte-array-to-string-transformer doc:name="Transform Request Payload" doc:description="Transformation(Byte array to string) of  input ."/>
+
+        <scripting:transformer doc:name="Transform Withdrawals Payload" doc:description="Capturing request payload">
+            <scripting:script engine="Groovy"><![CDATA[import groovy.json.*
+
+def input_Payload = new JsonSlurper().setType(JsonParserType.LAX).parseText(payload)
+def result=input_Payload.WithdrawalRequests
+
+return result]]></scripting:script>
+        </scripting:transformer>
+        <foreach doc:name="For Each - Withdrawal" doc:description="Iterating arraylist and storing in the withdrawls request in the Withdrawals Inbound  Queue">
+            <json:object-to-json-transformer doc:name="Object to JSON"/>
+            <jms:outbound-endpoint queue="${gateway.withdrawal.inbound.queue}" connector-ref="Active_MQ_Configuration" doc:name=" Inbound Withdrawals  Queue" doc:description="Storing request payload after each iteration."/>
+        </foreach>
+        <set-payload value="{
+	&quot;ReturnValue&quot;: &quot;Queued&quot;,
+	&quot;Message&quot;: &quot;DEV.q.PT88.withdrawal.request.v1&quot;
+}" doc:name="Withdrawals Scalar Response" doc:description="Scalar message: Withdrawls request queued"/>
+        <logger level="INFO" category="PaymentAsiaSEA Withdrawals | Scalar Payload" doc:name="Withdrawals Scalar Payload" doc:description="Withdrawals scalar payload logger" message="#[payload]"/>
+    </flow>
+    <flow name="implementation-for-paymentasiasea-withdrawal_ResponseFlow">
+        <jms:inbound-endpoint queue="${gateway.withdrawal.inbound.queue}" connector-ref="Active_MQ_Configuration" doc:name="Outbound Withdrawal Queue" doc:description="Fetching request payload from Outbound Withdrawal Queue"/>
+        <logger message="#[payload]" level="INFO" category="PaymentAsiaSEA Withdrawals | RequestOut Payload" doc:name="Withdrawals RequestOut Payload" doc:description="Withdrawals requestout payload logger"/>
+        <byte-array-to-string-transformer doc:name="Transform RequestOut Payload" doc:description="Transformation(Byte array to string) of  input ."/>
+
+        <set-variable variableName="withdrawalRequestMap" value="#[payload]" doc:name="Set Withdrawal Request Map" doc:description="Storing incoming request payload"/>
+        <scripting:transformer doc:name="Transform Payload to PayoutRequestAPI" doc:description="Request Example :   {&quot;WithdrawalId&quot;:10474104278952141233,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;123xyz&quot;,&quot;Currency&quot;:&quot;MYR&quot;,&quot;Amount&quot;:1000,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen Roman&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;124141234141&quot;}}    Output payload from Groovy:   [account_number:124141234141, amount:1000, bank_name:Hong Leong, beneficiary_name:Stephen Roman, currency:MYR, request_reference:10474104278952141233, sign:f826f2b3b20fc660e012381b93687ce60684cce1dc99857c232999b097c4d65dd824a14dd717afe20861ed97524cbd424d5d320a1ee0496b2015b4558f517965]">
+            <scripting:script engine="Groovy"><![CDATA[import java.security.MessageDigest
+import groovy.json.*
+
+def result = new JsonBuilder()  
+String merchant_Secret="${merchant.secret}"
+
+def input_Payload = new JsonSlurper().setType(JsonParserType.LAX).parseText(payload) //(see example in notes)
+String amount=input_Payload.Amount
+
+Map<String, String> request_Map = new HashMap<String, String>();
+    request_Map.put("account_number", input_Payload.AdditionalInfo.ClientAccountNumber);        
+    request_Map.put("bank_name", input_Payload.AdditionalInfo.BankName);
+    request_Map.put("beneficiary_name", input_Payload.AdditionalInfo.ClientName);   
+    request_Map.put("currency", input_Payload.Currency);
+    request_Map.put("request_reference", input_Payload.WithdrawalId) 
+    request_Map.put("amount", amount)   
+	
+def sorted_Map=request_Map.sort()
+String query_String=""
+
+for(key in sorted_Map)
+{              
+    query_String = query_String + ( key.getKey()+"="+java.net.URLEncoder.encode(key.getValue().toString(), "UTF-8")+"&")
+}
+String stringToBeHashed = query_String.substring(0, query_String.length()-1) + merchant_Secret;
+String sign_Msg = MessageDigest.getInstance("SHA-512").digest(stringToBeHashed.getBytes("UTF-8")).encodeHex().toString()   
+
+result account_number:input_Payload.AdditionalInfo.ClientAccountNumber,
+	   amount :amount,
+	   bank_name:input_Payload.AdditionalInfo.BankName,
+	   beneficiary_name:input_Payload.AdditionalInfo.ClientName,
+	   currency :input_Payload.Currency,
+	   request_reference :input_Payload.WithdrawalId,
+	   sign:sign_Msg					
+	   
+return result.toString()]]></scripting:script>
+        </scripting:transformer>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+
+        <http:request config-ref="HTTP_Request_Config_PayoutAPI" path="${GatewaySvc.Path}" method="POST" doc:name="HTTP  Payout Request API" doc:description="Call to Payout Request API">
+            <http:request-builder>
+                <http:query-params expression="#[payload]"/>
+                <http:header headerName="Content-Type" value="application/x-www-form-urlencoded"/>
+            </http:request-builder>
+        </http:request>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+
+
+        <scripting:transformer doc:name="Transform Withdrawals Response" doc:description="Example response:  &lt;success&gt;{request={id=a340a633-925b-412e-a116-2f2e83364b9d, time=1525099601}, payload={batch_reference=null, request_reference=104741042757852141233, status=0}, response={code=200, message=Success, time=1525099601}} &lt;/Success&gt; &lt;Failure&gt; {request={id=7f66f749-df4a-4260-bace-35c2354636eb, time=1525099601}, payload={details=currency HKD not supported}, response={code=400, message=Bad Request, time=1525099601}}&lt;/Failure&gt;  Output Payload to Groovy:
+&lt;Success&gt;{&quot;WithdrawalId&quot;:9994156171324566,&quot;ProviderReference&quot;:&quot;&quot;,&quot;Status&quot;:&quot;SENT&quot;,&quot;PayoutReference&quot;:&quot;b89ecb85-71e7-4cb5-be69-7cb253c409de&quot;,&quot;GatewayResponseCode&quot;:&quot;0&quot;,&quot;GatewayResponseMessage&quot;:&quot;Success&quot;,&quot;Message&quot;:&quot;&quot;,&quot;AdditionalInfo&quot;:{}}
+&lt;Failure&gt;{&quot;WithdrawalId&quot;:9994156454566,&quot;ProviderReference&quot;:&quot;&quot;,&quot;Status&quot;:&quot;REJECTED&quot;,&quot;PayoutReference&quot;:&quot;50e006b5-c2b9-42cc-8f04-bb80e63d620f&quot;,&quot;GatewayResponseCode&quot;:&quot;2&quot;,&quot;GatewayResponseMessage&quot;:&quot;duplicated `request_reference`&quot;,&quot;Message&quot;:&quot;&quot;,&quot;AdditionalInfo&quot;:{}}">
+            <scripting:script engine="Groovy"><![CDATA[import groovy.json.*
+
+def result = new JsonBuilder()
+def input_Payload = payload  //(see example in notes)
+String response_Status=""
+String message_Details=""
+String status_code=""
+
+def request_Map=message.getInvocationProperty('withdrawalRequestMap') //Set Withdrawal Request Map Flow Variable
+request_Payload = new JsonSlurper().setType(JsonParserType.LAX).parseText(request_Map)
+
+if ( input_Payload.response.code== "200" )
+{
+    response_Status = 'SENT'
+	status_code=input_Payload.payload.status
+    message_Details=input_Payload.response.message
+} else
+{
+    response_Status = 'REJECTED'
+	status_code='2'
+    message_Details=input_Payload.payload.details
+}
+message.setInvocationProperty('status', response_Status)
+			
+result WithdrawalId:request_Payload.WithdrawalId,
+	   ProviderReference:"",
+	   Status:response_Status,
+	   PayoutReference:input_Payload.request.id,
+	   GatewayResponseCode:status_code,
+	   GatewayResponseMessage:message_Details,
+	   Message:"",
+	   AdditionalInfo:{}
+
+return result.toString()
+
+]]></scripting:script>
+        </scripting:transformer>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <logger message="#[payload]" level="INFO" category="PaymentAsiaSEA Withdrawals | Response Payload" doc:name="Withdrawals Response Payload" doc:description="Withdrawals Response Payload Logger"/>
+        <choice doc:name="Choice-Approved/Rejected" doc:description="On the basis of STATUS we will send to APPROVED Queues otherwise discard and log the message.
+Status	Status code	Description
+SENT	0	Approved Queue
+REJECTED	Not equal to 0	Message logged
+">
+            <when expression="#[flowVars.status=='SENT']">
+                <jms:outbound-endpoint queue="${gateway.withdrawal.outbound.queue}" connector-ref="Active_MQ_Configuration" doc:name="Withdrawal Approved Queue" doc:description="Storing response payload to Withdrawal Approved Queue"/>
+                <logger message="#[payload]" level="INFO" category="PaymentAsiaSEA Withdrawals | Response Approved Payload" doc:name="Withdrawals Response Approve Payload" doc:description="Withdrawals response approve payload logger"/>
+            </when>
+            <otherwise>
+                <logger message="#[payload]" level="INFO" category="PaymentAsiaSEA Withdrawals | Response Reject Payload" doc:name="Withdrawals Response Rejected Payload" doc:description="Withdrawals response rejected payload logger"/>
+            </otherwise>
+        </choice>
+    </flow>
+
+    <flow name="implementation-for-paymentasiasea-notify_RequestFlow">
+        <logger message="#['Request Header \n http.request.uri = ' +message.inboundProperties.'http.request.uri'+  '\n content-length = '+message.inboundProperties.'content-length' +  '\n http.query.string = '+message.inboundProperties.'http.query.string'+  '\n accept-language = '+message.inboundProperties.'accept-language'+  '\n postman-token = '+message.inboundProperties.'postman-token'+  '\n http.query.params = '+message.inboundProperties.'http.query.params'+  '\n http.listener.path = '+message.inboundProperties.'http.listener.path'+  '\n http.uri.params = '+message.inboundProperties.'http.uri.params'+  '\n host = '+message.inboundProperties.'host'+  '\n content-type = '+message.inboundProperties.'content-type'+  '\n http.method = '+message.inboundProperties.'http.method'+  '\n caccept-encoding = '+message.inboundProperties.'accept-encoding'+  '\n http.relative.path = '+message.inboundProperties.'http.relative.path'+  '\n http.request.path = '+message.inboundProperties.'http.request.path']  #['\n \n Request Payload is :  \n' +message.payloadAs(java.lang.String)]" level="INFO" category="PaymentAsiaSEA Notify | RequestIn Payload" doc:name="Notify RequestIn Payload" doc:description="paymentasiasea-notify requestin payload logger"/>
+        <scripting:transformer doc:name="Transform Request Payload" doc:description="RequestExample: amount=0.01&amp;currency=HKD&amp;merchant_reference=TESTING_RPH1770&amp;request_reference=1e768009-f8d3-4bb9-a456-cc6eb5bde048&amp;status=0&amp;sign=799598ef7c2b41c3cae5b71bd08510d4dd3034138a256b886bf1485f4e34c3c2c2ae2002245f751eb66e6c0245d5ffa273b6c64f4bdd06bf1970f238a01df71a
+">
+            <scripting:script engine="Groovy"><![CDATA[import groovy.json.*
+
+def result = new JsonBuilder()
+def input_Payload= payload //(see example in notes)
+
+result amount: input_Payload.amount,
+       currency: input_Payload.currency,
+       merchant_reference: input_Payload.merchant_reference,
+       request_reference: input_Payload.request_reference,
+       status: input_Payload.status,
+       sign: input_Payload.sign
+
+return result.toString()]]></scripting:script>
+        </scripting:transformer>
+
+        <set-variable variableName="notifyRequestMap" value="#[payload]" doc:name="Set Notify Request Map"/>
+
+        <jms:outbound-endpoint queue="${platform.outbound.queue}" connector-ref="Active_MQ_Configuration" doc:name="Inbound Notify Queue" doc:description="Storing request payload to Inbound Notify Queue"/>
+        <set-payload  doc:name="Notify Scalar Response" doc:description="Scalar message: paymentasiasea-notify request queued" mimeType="text/plain" value="#[json:sign]"/>
+        <logger message="#[flowVars.notifyRequestMap]" level="INFO" category="PaymentAsiaSEA Notify | Scalar Payload" doc:name="Notify Scalar Payload" doc:description="paymentasiasea-notify scalar payload logger"/>
+    </flow>
+    <flow name="implementation-for-paymentasiasea-notify_ResponseFlow">
+        <jms:inbound-endpoint queue="${platform.outbound.queue}" connector-ref="Active_MQ_Configuration" doc:name="Outbound Notify Queue" doc:description="Fetching request payload from Outbound Notify Queue"/>
+        <logger message="#[payload]" level="INFO" category="PaymentAsiaSEA Notify | RequestOut Payload" doc:name="Notify RequestOut Payload" doc:description="paymentasiasea-notify requestout payload logger"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <scripting:transformer doc:name="Transform To CMF Message" doc:description="Request Example: {  &quot;amount&quot;: &quot;0.01&quot;,  &quot;currency&quot;: &quot;HKD&quot;,  &quot;merchant_reference&quot;: &quot;TESTING_RPH1770&quot;,  &quot;request_reference&quot;: &quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,  &quot;status&quot;: &quot;1&quot;,  &quot;sign&quot;: &quot;22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot; } Output to Groovy: [amount:0.01, merchant_reference:TESTING_RPH1770, sign:22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41, currency:HKD, request_reference:1e768009-f8d3-4bb9-a456-cc6eb5bde048, status:1]">
+            <scripting:script engine="Groovy"><![CDATA[import java.security.MessageDigest
+import groovy.json.*
+
+def input_Payload = payload  //(see example in notes)
+
+//Mandatory Fields Validation          
+if(input_Payload.currency==null || input_Payload.currency=='' || input_Payload.merchant_reference=='' || input_Payload.merchant_reference==null || input_Payload.amount==null || input_Payload.amount=='' || input_Payload.sign==null || input_Payload.sign=='' || input_Payload.request_reference==null || input_Payload.request_reference=='' || input_Payload.status==null || input_Payload.status=='')
+{
+	throw new NullPointerException("ParameterNotFound");
+}
+
+double intAmt = Double.parseDouble(input_Payload.amount);
+if(intAmt <=0 )
+{
+	throw new ArithmeticException("InvalidAmount");
+}
+
+def result = new JsonBuilder()
+String response_Status=input_Payload.status
+String provider_Message =""
+Boolean provider_Approved=false
+String instrument_Type="${InstrumentType}"
+String merchant_Secret="${merchant.secret}"
+message.setInvocationProperty('status', response_Status)
+
+Map<String, String> request_Map = new HashMap<String, String>();
+    request_Map.put("amount", input_Payload.amount);
+    request_Map.put("request_reference", input_Payload.request_reference);  
+    request_Map.put("currency", input_Payload.currency)  ; 
+    request_Map.put("merchant_reference", input_Payload.merchant_reference);            
+    request_Map.put("status", response_Status);
+                                    
+def sorted_Map=request_Map.sort()
+String query_String=""
+
+for(key in sorted_Map)
+{              
+    query_String = query_String + ( key.getKey()+"="+java.net.URLEncoder.encode(key.getValue().toString(), "UTF-8")+"&")
+}
+
+String stringToBeHashed = query_String.substring(0, query_String.length()-1) + merchant_Secret;
+String sign_Msg = MessageDigest.getInstance("SHA-512").digest(stringToBeHashed.getBytes("UTF-8")).encodeHex().toString()   
+
+//Sign Validation
+if (!sign_Msg.equals(input_Payload.sign))
+{
+    throw new IllegalArgumentException("InvalidSign");
+}
+      
+else{
+      if(response_Status=='1')
+	  {
+        provider_Message="SUCCESS"
+        provider_Approved=true
+      }
+	  else if(response_Status=='0')
+	  {
+        provider_Message="PENDING"
+      }
+	  else if(response_Status=='2')
+	  {
+        provider_Message="FAIL"
+      }
+	  else if(response_Status=='3')
+	  {
+        provider_Message="AUTHORIZED"
+      }
+	  else if(response_Status=='4')
+	  {
+        provider_Message="PROCESSING"
+      }
+	  else{
+        result Message:"Payment Notification Status Code Not Valid"
+		return result.toString()
+      }
+      
+      result OrderId: input_Payload.merchant_reference,
+             ClientIp: null,
+             ProviderReference: input_Payload.request_reference,
+             ProviderCode: input_Payload.status,
+             ProviderMessage: provider_Message,
+             ProviderApproved: provider_Approved,
+             CurrencyReceived: input_Payload.currency,
+             AmountReceived: input_Payload.amount,
+             ClientAccNo: "",
+             ClientAccName: "",
+             AVS: "",
+             Country: "",
+             InstrumentType: instrument_Type
+                              
+	  return result.toString()                    
+    }				   ]]></scripting:script>
+        </scripting:transformer>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <logger message="#[payload]" level="INFO" category="PaymentAsiaSEA Notify | Transformed CMF Message" doc:name="Transformed CMF Message" doc:description="Transformed CMF Message logger"/>
+        <choice doc:name="Choice-Approved/Rejected" doc:description="On the basis of STATUS we will send to APPROVED Queues otherwise discard and log the message. Status Status code Description SENT 1 Approved Queue REJECTED Not equal to 1 Message logged ">
+            <when expression="#[flowVars.status=='1']">
+                <jms:outbound-endpoint queue="${platform.inbound.queue}" connector-ref="Active_MQ_Configuration" doc:name="PaymentAsiaSEA Notify Approved Queue" doc:description="Storing response payload to PaymentAsiaSEA Notify Approved Queue"/>
+                <logger message="#[payload]" level="INFO" category="PaymentAsiaSEA Notify | Notify Response Approve Payload" doc:name="Notify Response Approved Payload" doc:description="Notify Response Approve Payload logger"/>
+            </when>
+            <otherwise>
+                <jms:outbound-endpoint queue="${database.inbound.queue}" connector-ref="Active_MQ_Configuration" doc:name="PaymentAsiaSEA Notify Rejected Queue" doc:description="Storing response payload to PaymentAsiaSEA Notify Rejected Queue"/>
+                <logger message="#[payload]" level="INFO" category="PaymentAsiaSEA Notify | Notify Response Rejected Payload" doc:name="Notify Response Rejected Payload" doc:description="Notify Response Rejected Payload logger"/>
+            </otherwise>
+        </choice>
+        <exception-strategy ref="GlobalExceptionStrategy" doc:name="Reference Exception Strategy" doc:description="Reference to GlobalExceptionStrategy"/>
+    </flow>
+</mule>

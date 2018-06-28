@@ -1,0 +1,20 @@
+{
+  "WithdrawalRequests": [
+    {
+       "WithdrawalId": 12345,
+       "LegalEntity" : "AxiCorp Financial Services Pty Ltd",
+       "ProviderReference": "123xyz",
+       "Currency": "USD",
+       "Amount": 73.57,
+       "AdditionalInfo": {"ClientEmail":"test@test.com","CustomFieldX":"x"}
+    },
+    {
+       "WithdrawalId": 12346,
+       "LegalEntity" : "AxiCorp Financial Services Pty Ltd",
+       "ProviderReference": "124xyz",
+       "Currency": "AUD",
+       "Amount": 800.85,
+       "AdditionalInfo": {"ClientEmail":"test@test.com","CustomFieldX":"x"}
+    }
+  ]
+}

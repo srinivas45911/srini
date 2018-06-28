@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:synchronize="http://www.mulesoft.org/schema/mule/synchronize"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  	xmlns:mock="http://www.mulesoft.org/schema/mule/mock" 
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/synchronize http://www.mulesoft.org/schema/mule/synchronize/current/mule-synchronize.xsd
+http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    
+    <munit:config mock-connectors="false" mock-inbounds="false" name="munit" doc:name="MUnit configuration"/>
+    <spring:beans>
+        <spring:import resource="classpath:implementation.xml"/>
+        <spring:import resource="classpath:api.xml"/>
+        <spring:import resource="classpath:config.xml"/>
+    </spring:beans>
+<munit:test name="WithdrawalRequestFlow-TestCase1(SuccessScenario)" description="Verifying functionality of withdrawal-RequestFlow in  paymentasiasea-withdrawal." >
+        <munit:set payload="#['{&quot;WithdrawalRequests&quot;:[{&quot;WithdrawalId&quot;:658961259131346346,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;124xyz&quot;,&quot;Currency&quot;:&quot;MYR&quot;,&quot;Amount&quot;:800.85,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen test&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;1241414141&quot;}}]}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\nWithdrawalId : '+payload.WithdrawalRequests[0].WithdrawalId+'\nCurrency : '+payload.WithdrawalRequests[0].Currency+'\nAmount : '+payload.WithdrawalRequests[0].Amount+'\nClientName :'+payload.WithdrawalRequests[0].AdditionalInfo.ClientName+'\nBankName:'+payload.WithdrawalRequests[0].AdditionalInfo.BankName+'\nClientAccountNumber:'+payload.WithdrawalRequests[0].AdditionalInfo.ClientAccountNumber +'\n']" level="INFO" category="MUnit Test || WithdrawalRequestFlow-TestCase1(SuccessScenario)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-withdrawal_RequestFlow" doc:name="Flow ref for withdrawal_RequestFlow"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#[' Response Payload\n ReturnValue : '+payload.ReturnValue+'\n Message : '+payload.Message+'\n']" level="INFO" category="MUnit Test || WithdrawalRequestFlow-TestCase1(SuccessScenario)" doc:name="Response Payload"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['Queued']" actualValue="#[payload.ReturnValue]" doc:name="Assert Return Value"/>
+    </munit:test>
+    <munit:test name="WithdrawalResponseFlow-TestCase2(SuccessScenarioforApprovedQueue)" description="Verifying functionality of withdrawal-ResponseFlow,Mock HTTP,Spying on pre-publish to approved queue in  paymentasiasea-withdrawal." >
+        <mock:when messageProcessor=".*:.*" doc:name="Mock HTTP Payout Request API">
+            <mock:with-attributes>
+              <mock:with-attribute name="doc:name" whereValue="#['HTTP  Payout Request API']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#['{&quot;request&quot;:{&quot;id&quot;:&quot;b27e70b8-0dae-4b32-a16f-00aaa89cd408&quot;,&quot;time&quot;:&quot;1525274314&quot;},&quot;response&quot;:{&quot;code&quot;:&quot;200&quot;,&quot;message&quot;:&quot;Success&quot;,&quot;time&quot;:&quot;1525274314&quot;},&quot;payload&quot;:{&quot;batch_reference&quot;:null,&quot;request_reference&quot;:&quot;65644649234582346&quot;,&quot;status&quot;:&quot;0&quot;}}']"/>
+
+
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy on pre-publish to queue">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Withdrawals Response Payload']"/>
+            </mock:with-attributes>
+
+
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['SENT']" actualValue="#[flowVars.status]" doc:name="assert status"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <munit:set payload="#['{&quot;WithdrawalId&quot;:65644649234582346,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;124xyz&quot;,&quot;Currency&quot;:&quot;MYR&quot;,&quot;Amount&quot;:800.85,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen test&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;1241414141&quot;}}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#[' Request Payload\nWithdrawalId : '+payload.WithdrawalId+'\nCurrency : '+payload.Currency+'\nAmount : '+payload.Amount+'\nClientName :'+payload.AdditionalInfo.ClientName+'\nBankName:'+payload.AdditionalInfo.BankName+'\nClientAccountNumber:'+payload.AdditionalInfo.ClientAccountNumber +'\n']" level="INFO" category="MUnit Test || WithdrawalResponseFlow-TestCase2(SuccessScenarioforApprovedQueue)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-withdrawal_ResponseFlow" doc:name="Flow ref for withdrawal_ResponseFlow"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Response Payload\nWithdrawalId : '+payload.WithdrawalId+'\nProviderReference : '+payload.ProviderReference+'\nStatus :'+payload.Status+'\nPayoutReference:'+payload.PayoutReference+'\nGatewayResponseCode:'+payload.GatewayResponseCode +'\nGatewayResponseMessage : '+payload.GatewayResponseMessage+'\n']" level="INFO" category="MUnit Test || WithdrawalResponseFlow-TestCase2(SuccessScenarioforApprovedQueue)" doc:name="Response Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['{&quot;Status&quot;:&quot;SENT&quot;,&quot;AdditionalInfo&quot;:{},&quot;Message&quot;:&quot;&quot;,&quot;GatewayResponseMessage&quot;:&quot;Success&quot;,&quot;ProviderReference&quot;:&quot;&quot;,&quot;PayoutReference&quot;:&quot;b27e70b8-0dae-4b32-a16f-00aaa89cd408&quot;,&quot;WithdrawalId&quot;:65644649234582346,&quot;GatewayResponseCode&quot;:&quot;0&quot;}']" actualValue="#[payload]" doc:name="check response payload"/>
+    </munit:test>
+    <munit:test name="WithdrawalResponseFlow-TestCase3(SuccessScenarioforRejectedQueue)" description="Verifying functionality of withdrawal-ResponseFlow,Mock HTTP,Spying on pre-publish to rejected  queue in  paymentasiasea-withdrawal." >
+        <mock:when messageProcessor=".*:.*" doc:name="Mock HTTP Payout Request API">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['HTTP  Payout Request API']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#['{&quot;request&quot;:{&quot;id&quot;:&quot;239c6f3c-988b-47c5-8da4-e0459046c6f4&quot;,&quot;time&quot;:&quot;1525266699&quot;},&quot;response&quot;:{&quot;code&quot;:&quot;400&quot;,&quot;message&quot;:&quot;Bad Request&quot;,&quot;time&quot;:&quot;1525266699&quot;},&quot;payload&quot;:{&quot;details&quot;:&quot;duplicated `request_reference`&quot;}}']"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy on pre-publish to queue">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Withdrawals Response Payload']"/>
+            </mock:with-attributes>
+
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['REJECTED']" actualValue="#[flowVars.status]" doc:name="assert status"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <munit:set payload="#['{&quot;WithdrawalId&quot;:656495120544582346,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;124xyz&quot;,&quot;Currency&quot;:&quot;MYR&quot;,&quot;Amount&quot;:800.85,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen test&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;1241414141&quot;}}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#[' Request Payload\nWithdrawalId : '+payload.WithdrawalId+'\nCurrency : '+payload.Currency+'\nAmount : '+payload.Amount+'\nClientName :'+payload.AdditionalInfo.ClientName+'\nBankName:'+payload.AdditionalInfo.BankName+'\nClientAccountNumber:'+payload.AdditionalInfo.ClientAccountNumber +'\n']" level="INFO" category="MUnit Test || WithdrawalResponseFlow-TestCase3(SuccessScenarioforRejectedQueue)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-withdrawal_ResponseFlow" doc:name="Flow ref for withdrawal_ResponseFlow"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Response Payload\nWithdrawalId : '+payload.WithdrawalId+'\nProviderReference : '+payload.ProviderReference+'\nStatus :'+payload.Status+'\nPayoutReference:'+payload.PayoutReference+'\nGatewayResponseCode:'+payload.GatewayResponseCode +'\nGatewayResponseMessage : '+payload.GatewayResponseMessage+'\n']" level="INFO" category="MUnit Test || WithdrawalResponseFlow-TestCase3(SuccessScenarioforRejectedQueue)" doc:name="Response Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['{&quot;Status&quot;:&quot;REJECTED&quot;,&quot;AdditionalInfo&quot;:{},&quot;Message&quot;:&quot;&quot;,&quot;GatewayResponseMessage&quot;:&quot;duplicated `request_reference`&quot;,&quot;ProviderReference&quot;:&quot;&quot;,&quot;PayoutReference&quot;:&quot;239c6f3c-988b-47c5-8da4-e0459046c6f4&quot;,&quot;WithdrawalId&quot;:656495120544582346,&quot;GatewayResponseCode&quot;:&quot;2&quot;}']" actualValue="#[payload]" doc:name="check response payload"/>
+  </munit:test>
+
+
+    <!-- <munit:test name="paymentasiasea-withdrawal_request-successTest" description="Verifying functionality of withdrawal asynchronous flow and spying on approved and rejected queues paymentasiasea-withdrawal-implementation-flow" >
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy when Approved">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Withdrawal Approved Queue']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Status message is not valid as expected" expectedValue="#['SENT']" actualValue="#[flowVars.Status]" doc:name="assert approved status"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy when Rejected">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Withdrawals Response Rejected Payload']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-on-equals message="Status message is not valid as expected" expectedValue="#['REJECTED']" actualValue="#[flowVars.Status]" doc:name="assert rejected status"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <munit:set payload="#['{&quot;WithdrawalRequests&quot;:[{&quot;WithdrawalId&quot;:658961259131346346,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;124xyz&quot;,&quot;Currency&quot;:&quot;MYR&quot;,&quot;Amount&quot;:800.85,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen test&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;1241414141&quot;}}]}']" doc:name="request payload"/>
+        <synchronize:run-and-wait timeout="1000000" runAsync="true" doc:name="asynchronize">
+            <flow-ref name="implementation-for-paymentasiasea-withdrawal_RequestFlow" doc:name="withdrawal_RequestFlow"/>
+        </synchronize:run-and-wait>
+    </munit:test> -->
+    <!-- <munit:test name="paymentasiasea-withdrawal_request-successTest-InboundQueue" description="Verifying functionality of for-each withdrawals in paymentasiasea-withdrawal-implementation-flow" ignore="true">
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy On Withdrawals Inbound  Queue">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Withdrawals Inbound  Queue']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-payload-equals expectedValue="#['{&quot;WithdrawalId&quot;:6554151204582346,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;124xyz&quot;,&quot;Currency&quot;:&quot;HKD&quot;,&quot;Amount&quot;:800.85,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen test&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;1241414141&quot;}}']" doc:name="Assert Payload"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <munit:set payload="#['{&quot;WithdrawalRequests&quot;:[{&quot;WithdrawalId&quot;:6554151204582346,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;124xyz&quot;,&quot;Currency&quot;:&quot;HKD&quot;,&quot;Amount&quot;:800.85,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen test&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;1241414141&quot;}}]}']" doc:name="request payload"/>
+        <flow-ref name="implementation-for-paymentasiasea-withdrawal_RequestFlow" doc:name="withdrawal_RequestFlow"/>
+        <logger message="#[payload]" level="INFO" category="PaymentAsia Withdrawals Implementation Flow || Scalar Message After for-each" doc:name="Logger"/>
+        <munit:assert-payload-equals message="OOPS!! Output message is not matching expected value #[payload]" expectedValue="#['{     &quot;ReturnValue&quot;:&quot;Queued&quot;,   &quot;Message&quot;:&quot;q.the.output.queue.PT88.withdrawal.request.v1&quot; }']" doc:name="assert response"/>
+    </munit:test>
+    <munit:test name="paymentasiasea-withdrawal_response-successTest-withdrawals-status-rejected" description="Verifying functionality of transform payload to PayoutRequestAPI response in paymentasiasea-withdrawal-implementation-flow" ignore="true">
+        <munit:set payload="#['{&quot;WithdrawalId&quot;:65644613464582346,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;124xyz&quot;,&quot;Currency&quot;:&quot;MYR&quot;,&quot;Amount&quot;:800.85,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen test&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;1241414141&quot;}}']" doc:name="request payload"/>
+        <flow-ref name="implementation-for-paymentasiasea-withdrawal_ResponseFlow" doc:name="withdrawal_ResponseFlow"/>
+        <logger message="#[payload]" level="INFO" category="PaymentAsia Withdrawals Implementation Flow || Withdrawals rejected status" doc:name="Logger"/>
+        <munit:assert-on-equals message="OOPS!! Output message is not matching expected value #[payload]" expectedValue="#['REJECTED']" actualValue="#[flowVars.Status]" doc:name="assert response"/>
+    </munit:test>
+    <munit:test name="paymentasiasea-withdrawal-response-success-ApprovedandRejectedTest" description="Verifying functionality of ApprovedandRejectedTest in paymentasiasea-withdrawal-implementation-flow" ignore="true">
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy when Approved">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Withdrawal Approved Queue']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <logger message="#[flowVars.Status]" level="INFO" category="Status!!" doc:name="Logger"/>
+                <munit:assert-on-equals message="OOPS!! Output message is not matching expected value #[payload]" expectedValue="#['SENT']" actualValue="#[flowVars.Status]" doc:name="assert response"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy when Rejected">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Withdrawals Response Rejected Payload']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <logger message="#[flowVars.Status]" level="INFO" category="Status!!" doc:name="Logger"/>
+                <munit:assert-on-equals message="OOPS!! Output message is not matching expected value #[payload]" expectedValue="#['REJECTED']" actualValue="#[flowVars.Status]" doc:name="assert response"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <munit:set payload="#['{&quot;WithdrawalId&quot;:65644613464582346,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;124xyz&quot;,&quot;Currency&quot;:&quot;MYR&quot;,&quot;Amount&quot;:800.85,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen test&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;1241414141&quot;}}']" doc:name="request payload"/>
+        <flow-ref name="implementation-for-paymentasiasea-withdrawal_ResponseFlow" doc:name="Flow Reference"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+    </munit:test>
+    <munit:test name="paymentasiasea-withdrawal-request-implementation-flow-withdrawals-mock-status-approvedTest" description="Verifying functionality of PayoutRequestAPI approved status when mocking in paymentasiasea-withdrawal-implementation-flow" ignore="true">
+        <mock:when messageProcessor=".*:.*" doc:name="Mock_HTTP  Payout Request API">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['HTTP  Payout Request API']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#['{&quot;request&quot;:{&quot;id&quot;:&quot;b27e70b8-0dae-4b32-a16f-00aaa89cd408&quot;,&quot;time&quot;:&quot;1525274314&quot;},&quot;response&quot;:{&quot;code&quot;:&quot;200&quot;,&quot;message&quot;:&quot;Success&quot;,&quot;time&quot;:&quot;1525274314&quot;},&quot;payload&quot;:{&quot;batch_reference&quot;:null,&quot;request_reference&quot;:&quot;65644649234582346&quot;,&quot;status&quot;:&quot;0&quot;}}']"/>
+        </mock:when>
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy on Withdrawal Approved Queue">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Withdrawal Approved Queue']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-payload-equals expectedValue="#['{&quot;WithdrawalResults&quot;:[{&quot;withdrawalId&quot;:65644649234582346,&quot;ProviderReference&quot;:&quot;&quot;,&quot;Status&quot;:&quot;SENT&quot;,&quot;PayoutReference&quot;:&quot;b27e70b8-0dae-4b32-a16f-00aaa89cd408&quot;,&quot;GatewayResponseCode&quot;:&quot;200&quot;,&quot;GatewayResponseMessage&quot;:&quot;Success&quot;,&quot;Message&quot;:&quot;&quot;,&quot;AdditionalInfo&quot;:{}}]}']" doc:name="Assert Payload"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <munit:set payload="#['{&quot;WithdrawalId&quot;:65644649234582346,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;124xyz&quot;,&quot;Currency&quot;:&quot;MYR&quot;,&quot;Amount&quot;:800.85,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen test&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;1241414141&quot;}}']" doc:name="request payload"/>
+        <flow-ref name="implementation-for-paymentasiasea-withdrawal_ResponseFlow" doc:name="withdrawal_ResponseFlow"/>
+        <logger message="#[flowVars.Status]" level="INFO" category="PaymentAsia Withdrawals Implementation Flow || Withdrawals mock on approved status" doc:name="Logger"/>
+        <munit:assert-on-equals message="OOPS!! Output message is not matching expected value #[payload]" expectedValue="#['SENT']" actualValue="#[flowVars.Status]" doc:name="assert response"/>
+    </munit:test>
+    <munit:test name="paymentasiasea-withdrawal-request-implementation-flow-withdrawals-mock-status-rejectedTest" description="Verifying functionality of PayoutRequestAPI rejected status when mocking in paymentasiasea-withdrawal-implementation-flow" ignore="true">
+        <mock:when messageProcessor=".*:.*" doc:name="Mock_HTTP  Payout Request API">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['HTTP Request PayoutAPI']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#['{&quot;request&quot;:{&quot;id&quot;:&quot;239c6f3c-988b-47c5-8da4-e0459046c6f4&quot;,&quot;time&quot;:&quot;1525266699&quot;},&quot;response&quot;:{&quot;code&quot;:&quot;400&quot;,&quot;message&quot;:&quot;Bad Request&quot;,&quot;time&quot;:&quot;1525266699&quot;},&quot;payload&quot;:{&quot;details&quot;:&quot;duplicated `request_reference`&quot;}}']"/>
+        </mock:when>
+        <munit:set payload="#['{&quot;WithdrawalId&quot;:656495120544582346,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;124xyz&quot;,&quot;Currency&quot;:&quot;MYR&quot;,&quot;Amount&quot;:800.85,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen test&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;1241414141&quot;}}']" doc:name="request payload"/>
+       <flow-ref name="implementation-for-paymentasiasea-withdrawal_ResponseFlow" doc:name="withdrawal_ResponseFlow"/>
+        <logger message="#[flowVars.Status]" level="INFO" category="PaymentAsia Withdrawals Implementation Flow || Withdrawals mock on rejected status" doc:name="Logger"/>
+        <munit:assert-on-equals message="OOPS!! Output message is not matching expected value #[payload]" expectedValue="#['REJECTED']" actualValue="#[flowVars.Status]" doc:name="assert response"/>
+    </munit:test> -->
+
+</mule>

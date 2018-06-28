@@ -1,0 +1,14 @@
+{
+  "OrderId": 7018,
+  "ClientRedirectURL": "",
+  "ClientRedirectType": "NA",
+  "PostParameters": "",
+  "PostPayload": "",
+  "RecommendedDisplayType": "",
+  "RecommendedDisplayWidth": 0,
+  "RecommendedDisplayHeight": 0
+  "PaymentStatus": "ACCEPTED",
+  "PaymentCode": "1",
+  "PaymentMessage": "Approved"
+  "AdditionalInfo" : {}
+}

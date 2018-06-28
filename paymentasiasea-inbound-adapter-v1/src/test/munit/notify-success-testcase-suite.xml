@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  	xmlns:mock="http://www.mulesoft.org/schema/mule/mock" 
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd">
+<munit:config name="munit" mock-connectors="false" mock-inbounds="false" doc:name="MUnit configuration"/>
+    <spring:beans>
+        <spring:import resource="classpath:implementation.xml"/>
+         <spring:import resource="classpath:api.xml"/>
+          <spring:import resource="classpath:config.xml"/>
+    </spring:beans>
+    <munit:test name="NotifyRequestFlow-TestCase1(SuccessScenario)" description="Verifying functionality of notify Request flow in paymentasiasea-Notify-implementation-flow" >
+        <munit:set payload="#[{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}]" doc:name="set request payload" mimeType="application/x-www-form-urlencoded"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="NotifyRequestFlow-TestCase1(SuccessScenario)" doc:name="Request Payload"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_RequestFlow" doc:name="Flow Reference"/>
+        <logger message="#['Response Payload : \n Sign :'+payload+'\n']" level="INFO" category="NotifyRequestFlow-TestCase1(SuccessScenario)" doc:name="Response Payload"/>
+        <!--  <logger message="#['Response Payload\n Sign : '+payload+'\n']" level="INFO" category="MUnit Test || Notify Request Flow TestCase 1" doc:name="Response Payload"/>-->
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41']" actualValue="#[payload]" doc:name="Assert Sign"/>
+    </munit:test>
+    <munit:test name="NotifyResponseFlow-TestCase1(SuccessScenarioforApprovedQueue)" description="Verifying functionality of notify Response flow and spying on pre-publish to approved queue in paymentasiasea-Notify-implementation-flow" >
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy on pre-publish to queue">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Transformed CMF Message']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+                <logger message="#['\n  Provider Message is '+payload.ProviderMessage+' because of Status is 1, Mapped CMF response sent to Notify Approved Queue \n']" level="INFO" category="MUnit Test || NotifyResponseFlow-TestCase1(SuccessScenarioforApprovedQueue)" doc:name="Provider Message [Status = 1]"/>
+                <munit:assert-on-equals expectedValue="#['SUCCESS']" actualValue="#[payload.ProviderMessage]" doc:name="Assert ProviderMessage Status" message="Provider message is not valid as expected"/>
+                <json:object-to-json-transformer doc:name="Object to JSON"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase1(SuccessScenarioforApprovedQueue)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Response Payload\n OrderId : '+payload.OrderId+'\n ProviderReference : '+payload.ProviderReference+'\n ProviderCode : '+payload.ProviderCode+'\n ProviderMessage : '+payload.ProviderMessage+'\n CurrencyReceived : '+payload.CurrencyReceived+'\n AmountReceived : '+payload.AmountReceived+'\n ProviderApproved : '+payload.ProviderApproved+'\n']" level="INFO" category="MUnit Test || NotifyResponseFlow-TestCase1(SuccessScenarioforApprovedQueue)" doc:name="Response Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['{&quot;CurrencyReceived&quot;:&quot;HKD&quot;,&quot;AmountReceived&quot;:&quot;0.01&quot;,&quot;InstrumentType&quot;:&quot;PT88&quot;,&quot;OrderId&quot;:&quot;TESTING_RPH1770&quot;,&quot;ClientIp&quot;:null,&quot;ClientAccName&quot;:&quot;&quot;,&quot;ProviderCode&quot;:&quot;1&quot;,&quot;ProviderApproved&quot;:true,&quot;ClientAccNo&quot;:&quot;&quot;,&quot;Country&quot;:&quot;&quot;,&quot;ProviderMessage&quot;:&quot;SUCCESS&quot;,&quot;ProviderReference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;AVS&quot;:&quot;&quot;}']" actualValue="#[payload]" doc:name="check response payload"/>
+    </munit:test>
+    <munit:test name="NotifyResponseFlow-TestCase2(SuccessScenarioforRejectedQueue)" description="Verifying functionality of notify Response flow and spying on pre-publish to rejected queue in paymentasiasea-Notify-implementation-flow" >
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy on pre-publish to queue">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Transformed CMF Message']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+                <logger message="#['\n  Provider Message is '+payload.ProviderMessage+' because of Status is 0, Mapped CMF response sent to Notify Rejected Queue \n']" level="INFO" category="MUnit Test || NotifyResponseFlow-TestCase2(SuccessScenarioforRejectedQueue)" doc:name="Provider Message [Status = 0]"/>
+                <munit:assert-on-equals expectedValue="#['PENDING']" actualValue="#[payload.ProviderMessage]" doc:name="Assert ProviderMessage Status" message="Provider message is not valid as expected"/>
+                <json:object-to-json-transformer doc:name="Object to JSON"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;0&quot;,&quot;sign&quot;:&quot;799598ef7c2b41c3cae5b71bd08510d4dd3034138a256b886bf1485f4e34c3c2c2ae2002245f751eb66e6c0245d5ffa273b6c64f4bdd06bf1970f238a01df71a&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase2(SuccessScenarioforRejectedQueue)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Response Payload\n OrderId : '+payload.OrderId+'\n ProviderReference : '+payload.ProviderReference+'\n ProviderCode : '+payload.ProviderCode+'\n ProviderMessage : '+payload.ProviderMessage+'\n CurrencyReceived : '+payload.CurrencyReceived+'\n AmountReceived : '+payload.AmountReceived+'\n ProviderApproved : '+payload.ProviderApproved+'\n']" level="INFO" category="MUnit Test || NotifyResponseFlow-TestCase2(SuccessScenarioforRejectedQueue)" doc:name="Response Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['{&quot;CurrencyReceived&quot;:&quot;HKD&quot;,&quot;AmountReceived&quot;:&quot;0.01&quot;,&quot;InstrumentType&quot;:&quot;PT88&quot;,&quot;OrderId&quot;:&quot;TESTING_RPH1770&quot;,&quot;ClientIp&quot;:null,&quot;ClientAccName&quot;:&quot;&quot;,&quot;ProviderCode&quot;:&quot;0&quot;,&quot;ProviderApproved&quot;:false,&quot;ClientAccNo&quot;:&quot;&quot;,&quot;Country&quot;:&quot;&quot;,&quot;ProviderMessage&quot;:&quot;PENDING&quot;,&quot;ProviderReference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;AVS&quot;:&quot;&quot;}']" actualValue="#[payload]" doc:name="check response payload"/>
+    </munit:test>
+    <!-- <munit:test name="paymentasiasea-paymentnotify-successTest-notify_notify_RequestFlow-SpyonInboundNotifyQueue" description="Verifying functionality of Inbound Notify Queue in paymentasiasea-Notify-implementation-flow" ignore="true">
+        <mock:spy messageProcessor=".*:.*" doc:name="Spy Inbound Notify Queue">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Inbound Notify Queue']"/>
+            </mock:with-attributes>
+            <mock:assertions-before-call>
+                <munit:assert-payload-equals message="OOPS!! Output message is not matching expected value #[payload]" expectedValue="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']" doc:name="Assert Payload"/>
+                <munit:assert-on-equals expectedValue="#[]" actualValue="#[]" doc:name="Assert Equals"/>
+            </mock:assertions-before-call>
+        </mock:spy>
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']" doc:name="request payload"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_RequestFlow" doc:name="implementation-for-paymentasiasea-notify_RequestFlow"/>
+        <logger message="#[payload]" level="INFO" category="PaymentAsia Notify Implementation notify_RequestFlow || Response when spy on Inbound Notify Queue" doc:name="Logger"/>
+        <munit:assert-payload-equals message="OOPS!! Output message is not matching expected value #[payload]" expectedValue="#['{  &quot;ReturnValue&quot;: &quot;True&quot;,  &quot;Message&quot;: &quot;&quot; }']" doc:name="assert response"/>
+    </munit:test> -->
+
+
+</mule>

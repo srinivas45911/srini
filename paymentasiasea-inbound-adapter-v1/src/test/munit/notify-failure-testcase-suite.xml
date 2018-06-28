@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  	xmlns:mock="http://www.mulesoft.org/schema/mule/mock" 
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd">
+<munit:config name="munit" mock-connectors="false" mock-inbounds="false" doc:name="MUnit configuration"/>
+    <spring:beans>
+        <spring:import resource="classpath:implementation.xml"/>
+         <spring:import resource="classpath:api.xml"/>
+          <spring:import resource="classpath:config.xml"/>
+    </spring:beans>
+<munit:test name="NotifyResposeFlow-SignValidationTestCase1(FailureScenariowithIncorrectAmountValue)" description="This test case is used to validate &quot;amount&quot; field coming from request payload , remaining fields are valid   " >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.02&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit Test || NotifyResposeFlow-SignValidationTestCase1(FailureScenariowithIncorrectAmountValue)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <logger message="#['Response Error Payload\nSign Validation Error :'+payload+' : Generated sign with given request parameters (amount value in request payload) is mismatched.\n']" level="INFO" category="MUnit || NotifyResposeFlow-SignValidationTestCase1(FailureScenariowithIncorrectAmountValue)" doc:name="Response Error Payload"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['{ &quot;message&quot; : &quot;Sign Validation Failed&quot; }']" actualValue="#[payload]" doc:name="Assert Error Response"/>
+    </munit:test>
+    <munit:test name="NotifyResposeFlow-SignValidationTestCase2(FailureScenariowithIncorrectCurrencyValue)" description="This test case is used to validate &quot;currency&quot; field coming from request payload , remaining fields are valid.   " >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;CNY&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit Test || NotifyResposeFlow-SignValidationTestCase2(FailureScenariowithIncorrectCurrencyValue)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <logger level="INFO" category="MUnit || NotifyResposeFlow-SignValidationTestCase2(FailureScenariowithIncorrectCurrencyValue)" doc:name="Response Error Payload" message="#['Response Error Payload\nSign Validation Error :'+payload+' : Generated sign with given request parameters (currency value in request payload) is mismatched.\n']"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['{ &quot;message&quot; : &quot;Sign Validation Failed&quot; }']" actualValue="#[payload]" doc:name="Assert Error Response"/>
+    </munit:test>
+    <munit:test name="NotifyResposeFlow-SignValidationTestCase3(FailureScenariowithIncorrectMerchant_referenceValue)" description="This test case is used to validate &quot;merchant_reference&quot; field coming from request payload , remaining fields are valid .  " >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1771&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit Test || NotifyResposeFlow-SignValidationTestCase3(FailureScenariowithIncorrectMerchant_referenceValue)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <logger message="#['Response Error Payload\nSign Validation Error :'+payload+' : Generated sign with given request parameters (merchant_reference value in request payload) is mismatched.\n']" level="INFO" category="MUnit || NotifyResposeFlow-SignValidationTestCase3(FailureScenariowithIncorrectMerchant_referenceValue)" doc:name="Response Error Payload"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['{ &quot;message&quot; : &quot;Sign Validation Failed&quot; }']" actualValue="#[payload]" doc:name="Assert Error Response"/>
+    </munit:test>
+    <munit:test name="NotifyResposeFlow-SignValidationTestCase4(FailureScenariowithIncorrectRequest_referenceValue)" description="This test case is used to validate &quot;request_reference&quot; field coming from request payload , remaining fields are valid. " >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;2B868009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit Test || NotifyResposeFlow-SignValidationTestCase4(FailureScenariowithIncorrectRequest_referenceValue)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <logger message="#['Response Error Payload\nSign Validation Error :'+payload+' : Generated sign with given request parameters (request_reference value in request payload) is mismatched.\n']" level="INFO" category="MUnit || NotifyResposeFlow-SignValidationTestCase4(FailureScenariowithIncorrectRequest_referenceValue)" doc:name="Response Error Payload"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['{ &quot;message&quot; : &quot;Sign Validation Failed&quot; }']" actualValue="#[payload]" doc:name="Assert Error Response"/>
+    </munit:test>
+    <munit:test name="NotifyResposeFlow-SignValidationTestCase5(FailureScenariowithIncorrectStatusValue)" description="This test case is used to validate &quot;status&quot; field coming from request payload , remaining fields are valid   " >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;0&quot;,&quot;sign&quot;:&quot;22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit Test || NotifyResposeFlow-SignValidationTestCase5(FailureScenariowithIncorrectStatusValue)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <logger message="#['Response Error Payload\nSign Validation Error :'+payload+' : Generated sign with given request parameters (status value in request payload) is mismatched.\n']" level="INFO" category="MUnit || NotifyResposeFlow-SignValidationTestCase5(FailureScenariowithIncorrectStatusValue)" doc:name="Response Error Payload"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['{ &quot;message&quot; : &quot;Sign Validation Failed&quot; }']" actualValue="#[payload]" doc:name="Assert Error Response"/>
+    </munit:test>
+    <munit:test name="NotifyResposeFlow-SignValidationTestCase6(FailureScenariowithIncorrectSignValue)" description="This test case is used to validate &quot;sign&quot; field coming from request payload , remaining fields are valid   " >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aa12543eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit Test || NotifyResposeFlow-SignValidationTestCase6(FailureScenariowithIncorrectSignValue)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <logger message="#['Response Error Payload\nSign Validation Error :'+payload+' : Generated sign with given request parameters (sign value in request payload) is mismatched.\n']" level="INFO" category="MUnit || NotifyResposeFlow-SignValidationTestCase6(FailureScenariowithIncorrectSignValue)" doc:name="Response Error Payload"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['{ &quot;message&quot; : &quot;Sign Validation Failed&quot; }']" actualValue="#[payload]" doc:name="Assert Error Response"/>
+    </munit:test>
+    <munit:test name="NotifyResponseFlow-TestCase1(FailureScenarioforInvalidAmountField)" description="MUnit Test" >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;-10&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aa12543eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase1(FailureScenarioforMandatoryFields)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Flow ref to Notify Response Flow"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <logger message="#['Response Error Payload\n Mandatory Fields Exception :'+payload+' :  invalid Amount check where amount &lt; 0 \n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase1(FailureScenarioforMandatoryFields)" doc:name="Response Error Payload"/>
+        <munit:assert-on-equals message="Response message is not valid as expected" expectedValue="#['{ &quot;message&quot; : &quot;Invalid Amount&quot; }']" actualValue="#[payload]" doc:name="Assert Error Response"/>
+    </munit:test>
+
+    <munit:test name="NotifyResponseFlow-TestCase2(FailureScenarioforMandatoryFields)" description="This test case is used to validate &quot;Mandatory&quot; field coming from request payload for sign creation" >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;&quot;,&quot;currency&quot;:&quot;&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aa12543eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase2(FailureScenarioforMandatoryFields)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <logger message="#['Response Error Payload\n Mandatory Fields Exception :'+payload+' :  Null value check for mandatory parameters for sign creation[amount, currency].\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase2(FailureScenarioforMandatoryFields)" doc:name="Response Error Payload"/>
+        <munit:assert-on-equals message="Response Error Message is not valid as expected" expectedValue="#['{ &quot;message&quot; : &quot;Mandatory Fields Validation Failed&quot; }']" actualValue="#[payload]" doc:name="Assert Error Response"/>
+    </munit:test>
+    
+    
+    <munit:test name="NotifyResponseFlow-TestCase3(FailureScenario-PROCESSING)" description="Verifying functionality of notify flow when &quot;Status&quot; is PROCESSING in NotifyResponseFlow" >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;4&quot;,&quot;sign&quot;:&quot;701ed678f8721c670fa9bdf9eb83948704b27e85e95b16e93b20d312ad8f872940745cb12e00f9f3b795a394e699e2492077a3b1ccf2c789b68e927e01e1bfcc&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase3(FailureScenario-PROCESSING)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Response Payload\n OrderId : '+payload.OrderId+'\n ProviderReference : '+payload.ProviderReference+'\n ProviderCode : '+payload.ProviderCode+'\n ProviderMessage : '+payload.ProviderMessage+'\n CurrencyReceived : '+payload.CurrencyReceived+'\n AmountReceived : '+payload.AmountReceived+'\n ProviderApproved : '+payload.ProviderApproved+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase3(FailureScenario-PROCESSING)" doc:name="Response Payload"/>
+        <munit:assert-true message="Status is wrong." condition="#[flowVars.status=='4']" doc:name="Assert True-Status"/>
+        <munit:assert-on-equals message="Provider Message is not as expected." expectedValue="#['PROCESSING']" actualValue="#[payload.ProviderMessage]" doc:name="Assert Provider Message"/>
+    </munit:test>
+    <munit:test name="NotifyResponseFlow-TestCase4(FailureScenario-AUTHORIZED)" description="Verifying functionality of notify flow when &quot;Status&quot; is AUTHORIZED in paymentasiasea-paymentnotify flow." >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;3&quot;,&quot;sign&quot;:&quot;bbe56d09d0126dbaefce11ae8b657b9ad58dbeec3fb47b9da46a3b4d11075e7f60b1c90009027c86988bb4fbfc14ce45a9d900bb72b9042ba36901e16a82d2ed&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase4(FailureScenario-AUTHORIZED)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Response Payload\n OrderId : '+payload.OrderId+'\n ProviderReference : '+payload.ProviderReference+'\n ProviderCode : '+payload.ProviderCode+'\n ProviderMessage : '+payload.ProviderMessage+'\n CurrencyReceived : '+payload.CurrencyReceived+'\n AmountReceived : '+payload.AmountReceived+'\n ProviderApproved : '+payload.ProviderApproved+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase4(FailureScenario-AUTHORIZED)" doc:name="Response Payload"/>
+        <munit:assert-true message="Status is wrong." condition="#[flowVars.status=='3']" doc:name="Assert True-Status"/>
+        <munit:assert-on-equals message="Provider Message is not as expected." expectedValue="#['AUTHORIZED']" actualValue="#[payload.ProviderMessage]" doc:name="Assert Provider Message"/>
+    </munit:test>
+    <munit:test name="NotifyResponseFlow-TestCase5(FailureScenario-FAIL)" description="Verifying functionality of notify flow when &quot;Status&quot; is FAIL in paymentasiasea-paymentnotify flow." >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;2&quot;,&quot;sign&quot;:&quot;8d1ea51757246d5c449e29ae66e53a5fae9991107e1152557645fe94c83689240b53a384728ba75f8317e18ccec542d00a06ed5ac056191b67bf2dff5f9a53f1&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase5(FailureScenario-FAIL)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Response Payload\n OrderId : '+payload.OrderId+'\n ProviderReference : '+payload.ProviderReference+'\n ProviderCode : '+payload.ProviderCode+'\n ProviderMessage : '+payload.ProviderMessage+'\n CurrencyReceived : '+payload.CurrencyReceived+'\n AmountReceived : '+payload.AmountReceived+'\n ProviderApproved : '+payload.ProviderApproved+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase5(FailureScenario-FAIL)" doc:name="Response Payload"/>
+        <munit:assert-true message="Status is wrong." condition="#[flowVars.status=='2']" doc:name="Assert True-Status"/>
+        <munit:assert-on-equals message="Provider Message is not as expected." expectedValue="#['FAIL']" actualValue="#[payload.ProviderMessage]" doc:name="Assert Provider Message"/>
+    </munit:test>
+    <munit:test name="NotifyResponseFlow-TestCase6(FailureScenario-PENDING)" description="Verifying functionality of notify flow when &quot;Status&quot; is PENDING in paymentasiasea-paymentnotify flow." >
+        <munit:set payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;0&quot;,&quot;sign&quot;:&quot;799598ef7c2b41c3cae5b71bd08510d4dd3034138a256b886bf1485f4e34c3c2c2ae2002245f751eb66e6c0245d5ffa273b6c64f4bdd06bf1970f238a01df71a&quot;}']" doc:name="set request payload"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Request Payload\n amount : '+payload.amount+'\n currency : '+payload.currency+'\n merchant_reference : '+payload.merchant_reference+'\n request_reference : '+payload.request_reference+'\n status : '+payload.status+'\n sign : '+payload.sign+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase6(FailureScenario-PENDING)" doc:name="Request Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <flow-ref name="implementation-for-paymentasiasea-notify_ResponseFlow" doc:name="Flow ref to Notify Response Flow"/>
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Response Payload\n OrderId : '+payload.OrderId+'\n ProviderReference : '+payload.ProviderReference+'\n ProviderCode : '+payload.ProviderCode+'\n ProviderMessage : '+payload.ProviderMessage+'\n CurrencyReceived : '+payload.CurrencyReceived+'\n AmountReceived : '+payload.AmountReceived+'\n ProviderApproved : '+payload.ProviderApproved+'\n']" level="INFO" category="MUnit || NotifyResponseFlow-TestCase6(FailureScenario-PENDING)" doc:name="Response Payload"/>
+        <munit:assert-true message="Status is wrong." condition="#[flowVars.status=='0']" doc:name="Assert True-Status"/>
+        <munit:assert-on-equals message="Provider Message is not as expected." expectedValue="#['PENDING']" actualValue="#[payload.ProviderMessage]" doc:name="Assert Provider Message"/>
+    </munit:test>
+
+</mule>

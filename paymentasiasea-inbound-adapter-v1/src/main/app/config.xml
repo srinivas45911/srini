@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster" xmlns:context="http://www.springframework.org/schema/context" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd">
+
+<!-- PaymentAsia Adapter Http Configuration -->
+<http:listener-config name="api-httpListenerConfig" host="${endpoint.host}" port="${endpoint.port}" basePath="${endpoint.path}" doc:name="HTTP Listener Configuration"/>
+    <context:property-placeholder location="classpath:paymentasiasea-inbound-adapter-v1.properties,classpath:domain.properties"/>
+    <configuration defaultExceptionStrategy-ref="GlobalExceptionStrategy" doc:name="Configuration">
+        <http:config useTransportForUris="false"/>
+    </configuration>
+    <jms:activemq-connector name="Active_MQ_Configuration" username="${async.jms.user}" password="${async.jms.password}" brokerURL="${async.jms.brokerURL}" validateConnections="true" doc:name="Active MQ"/>
+    <http:request-config name="HTTP_Request_Config_PayoutAPI" protocol="HTTPS" host="${GatewaySvc.Host}" port="${GatewaySvc.Port}" basePath="${GatewaySvc.BasePath}${merchantToken}" doc:name="HTTP Request Configuration"/>
+        
+    <choice-exception-strategy name="GlobalExceptionStrategy">
+            <catch-exception-strategy doc:name="Catch Groovy Exception Strategy" when="#[exception.causeMatches('groovy.*')]">
+                <set-payload value="{ &quot;message&quot; : &quot;Groovy Exceptions&quot; }" doc:name="Set Payload"/>
+                <logger level="INFO" doc:name="Groovy Exceptions Logger" category="Exceptions || All Groovy Exceptions" message="#[payload]"/>
+            </catch-exception-strategy>
+            <catch-exception-strategy when="#[exception.causedBy(java.lang.NullPointerException: ParameterNotFound)]" doc:name="Catch Mandatory Fields Validation Exception Strategy">
+            <set-payload value="{ &quot;message&quot; : &quot;Mandatory Fields Validation Failed&quot; }" doc:name="Set Payload"/>
+                <logger message="#[payload]" level="INFO" category="Exceptions || Mandatory Fields Validation Exception" doc:name="Mandatory Fields Validations Exceptions Logger"/>
+        </catch-exception-strategy>    
+        <catch-exception-strategy when="#[exception.causedBy(ArithmeticException: InvalidAmount)]" doc:name="Catch Amount Validation Exception Strategy">
+            <set-payload value="{ &quot;message&quot; : &quot;Invalid Amount&quot; }" doc:name="Set Payload"/>
+            <logger level="INFO" doc:name="Invalid Amount Logger" category="Exceptions || Amount Validation Exception" message="#[payload]"/>
+        </catch-exception-strategy>       
+            <catch-exception-strategy doc:name="Catch Sign Validation Exception Strategy" when="#[exception.causedBy(java.lang.IllegalArgumentException: InvalidSign)]">
+                <set-payload value="{ &quot;message&quot; : &quot;Sign Validation Failed&quot; }" doc:name="Set Payload"/>
+            <logger message="#[payload]" level="INFO" category="Exceptions || Sign Validation Exceptions" doc:name="Sign Validation Exception Logger"/>
+            </catch-exception-strategy>
+            <catch-exception-strategy doc:name="Catch AllOther Exception Strategy">
+            <set-payload value="#[exception.message]" doc:name="Set Payload"/>
+            <logger message="#[payload]" level="INFO" category="Exceptions || All Other" doc:name="All Other Exceptions Logger"/>
+        </catch-exception-strategy>
+        </choice-exception-strategy>
+
+</mule>

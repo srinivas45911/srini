@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  	xmlns:mock="http://www.mulesoft.org/schema/mule/mock" 
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd">
+<munit:config name="munit" mock-connectors="false" mock-inbounds="false" doc:name="MUnit configuration"/>
+    <spring:beans>
+        <spring:import resource="classpath:implementation.xml"/>
+         <spring:import resource="classpath:api.xml"/>
+          <spring:import resource="classpath:config.xml"/>
+    </spring:beans>    
+    <http:request-config name="HTTP_Request_Configuration" host="${endpoint.host}" port="${endpoint.port}" basePath="${endpoint.path}" doc:name="HTTP Request Configuration"/>
+
+  <munit:test name="Globalexception-apikit-TestCase(404)"
+              description="Verifying functionality of http status 404 in deposits" >
+              <munit:set
+                     payload="#['{&quot;CustomerId&quot;:&quot;123456&quot;,&quot;OrderId&quot;:119876541255081,&quot;Amount&quot;:&quot;100&quot;,&quot;ProductId&quot;:287,&quot;LegalEntity&quot;:&quot;AxiCorp Limited&quot;,&quot;Currency&quot;:&quot;IDR&quot;,&quot;ClientIp&quot;:&quot;123.123.123.123&quot;,&quot;ClientSessionId&quot;:&quot;QWE!@#wasdferty&quot;,&quot;SystemSourceId&quot;:6,&quot;InstrumentToken&quot;:&quot;&quot;,&quot;AdditionalInfo&quot;:{&quot;ClientFirstName&quot;:&quot;Someone&quot;,&quot;ClientLastName&quot;:&quot;Buying&quot;,&quot;ClientPhone&quot;:&quot;9876543223&quot;,&quot;ClientAddress&quot;:&quot;1,Bay Street&quot;,&quot;ClientEmail&quot;:&quot;someone@gmail.com&quot;,&quot;ClientCountry&quot;:&quot;US&quot;,&quot;ClientState&quot;:&quot;NY&quot;}}']"
+                     doc:name="Set Request Payload" />
+              <json:json-to-object-transformer
+                     returnClass="java.util.HashMap" doc:name="JSON to Object" />
+              <logger
+                     message="#['Request Payload\n CustomerId : '+payload.CustomerId+'\n OrderId : '+payload.OrderId+'\n Amount : '+payload.Amount+'\n Currency : '+payload.Currency+'\n ClientIp :'+payload.ClientIp+'\n ClientFirstName:'+payload.AdditionalInfo.ClientFirstName+'\n ClientLastName:'+payload.AdditionalInfo.ClientLastName+'\n ClientPhone:'+payload.AdditionalInfo.ClientPhone+'\n ClientEmail:'+payload.AdditionalInfo.ClientEmail +'\n']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(404)" doc:name="Request Payload" />
+              <http:request config-ref="HTTP_Request_Configuration"
+                     path="/Depo" method="POST" doc:name="Access Invalid Resource to Validate 404 Error">
+                     <http:request-builder>
+                           <http:header headerName="Accept" value="application/json" />
+                           <http:header headerName="Content-Type" value="application/json" />
+
+                     </http:request-builder>
+                     <http:success-status-code-validator
+                           values="404" />
+              </http:request>
+              <object-to-string-transformer doc:name="HTTP Response to String" />
+              <munit:assert-true message="The HTTP Status code is not correct!"
+                     condition="#[messageInboundProperty('http.status').is(eq(404))]"
+                     doc:name="Assert HTTP Status Eq 404" />
+              <logger message="#['Response Payload\nException : '+payload+' : Accessing incorrect resource.\n']" level="INFO"
+                     category="MUnit || Globalexception-apikit-TestCase(404)" doc:name="Response Payload" />
+              <munit:assert-on-equals message="The response payload is not correct!"
+                     expectedValue="#['{ &quot;message&quot;: &quot;Resource not found&quot; }']"
+                     actualValue="#[payload]" doc:name="Assert That Payload is as Expected" />
+       </munit:test>
+       <munit:test name="Globalexception-apikit-TestCase(405)"
+              description="Verifying functionality of [post:/Deposits:application/json:api-config-405-application/json]" >
+              <munit:set
+                     payload="#['{&quot;CustomerId&quot;:&quot;123456&quot;,&quot;OrderId&quot;:119876541255081,&quot;Amount&quot;:&quot;100&quot;,&quot;ProductId&quot;:287,&quot;LegalEntity&quot;:&quot;AxiCorp Limited&quot;,&quot;Currency&quot;:&quot;IDR&quot;,&quot;ClientIp&quot;:&quot;123.123.123.123&quot;,&quot;ClientSessionId&quot;:&quot;QWE!@#wasdferty&quot;,&quot;SystemSourceId&quot;:6,&quot;InstrumentToken&quot;:&quot;&quot;,&quot;AdditionalInfo&quot;:{&quot;ClientFirstName&quot;:&quot;Someone&quot;,&quot;ClientLastName&quot;:&quot;Buying&quot;,&quot;ClientPhone&quot;:&quot;9876543223&quot;,&quot;ClientAddress&quot;:&quot;1,Bay Street&quot;,&quot;ClientEmail&quot;:&quot;someone@gmail.com&quot;,&quot;ClientCountry&quot;:&quot;US&quot;,&quot;ClientState&quot;:&quot;NY&quot;}}']"
+                     doc:name="Set Request Payload" />
+              <json:json-to-object-transformer
+                     returnClass="java.util.HashMap" doc:name="JSON to Object" />
+              <logger
+                     message="#['Request Payload\n CustomerId : '+payload.CustomerId+'\n OrderId : '+payload.OrderId+'\n Amount : '+payload.Amount+'\n Currency : '+payload.Currency+'\n ClientIp :'+payload.ClientIp+'\n ClientFirstName:'+payload.AdditionalInfo.ClientFirstName+'\n ClientLastName:'+payload.AdditionalInfo.ClientLastName+'\n ClientPhone:'+payload.AdditionalInfo.ClientPhone+'\n ClientEmail:'+payload.AdditionalInfo.ClientEmail +'\n']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(405)" doc:name="Request Payload" />
+              <http:request config-ref="HTTP_Request_Configuration"
+                     path="/Deposits" method="GET" doc:name="Access Invalid Method to Validate 405 Error">
+                     <http:request-builder>
+                           <http:header headerName="Accept" value="application/json" />
+                           <http:header headerName="Content-Type" value="application/json" />
+
+                     </http:request-builder>
+                     <http:success-status-code-validator
+                           values="405" />
+              </http:request>
+              <object-to-string-transformer doc:name="HTTP Response to String" />
+              <munit:assert-true message="The HTTP Status code is not correct!"
+                     condition="#[messageInboundProperty('http.status').is(eq(405))]"
+                     doc:name="Assert HTTP Status Eq 405" />
+              <logger message="#['Response Payload\nException : '+payload+' : Accessing Invalid Method.\n']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(405)"
+                     doc:name="Response Payload" />
+              <munit:assert-on-equals message="The response payload is not correct!"
+                     expectedValue="#['{ &quot;message&quot;: &quot;Method not allowed&quot; }']"
+                     actualValue="#[payload]" doc:name="Assert That Payload is as Expected" />
+       </munit:test>
+
+       <munit:test name="Globalexception-apikit-TestCase(400)"
+              description="Verifying functionality of [post:/Deposits:application/json:api-config-400-application/json]" >
+              <munit:set
+                     payload="#['{&quot;CustomerId&quot;:&quot;123456&quot;&quot;OrderId&quot;:545411,&quot;ProductId&quot;:287,&quot;LegalEntity&quot;:&quot;AxiCorp Limited&quot;,&quot;Currency&quot;:&quot;USD&quot;,&quot;Amount&quot;:100,&quot;ClientIp&quot;:&quot;123.123.123.123&quot;,&quot;ClientSessionId&quot;:&quot;QWE!@#wasdferty&quot;,&quot;SystemSourceId&quot;:6,&quot;InstrumentToken&quot;:&quot;&quot;,&quot;AdditionalInfo&quot;:{&quot;ClientFirstName&quot;:&quot;Someone&quot;,&quot;ClientLastName&quot;:&quot;Buying&quot;,&quot;ClientPhone&quot;:&quot;9876543223&quot;,&quot;ClientAddress&quot;:&quot;1, Bay Street&quot;,&quot;ClientEmail&quot;:&quot;someone@gmail.com&quot;,&quot;ClientCountry&quot;:&quot;US&quot;,&quot;ClientState&quot;:&quot;NY&quot;}}']"
+                     doc:name="Set Request Message" />
+              <logger
+                     message="#['Request Payload \n'+payload+'\n is not a valid JSON Structure']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(400)" doc:name="Request Payload" />
+              <http:request config-ref="HTTP_Request_Configuration"
+                     path="/Deposits" method="POST"
+                     doc:name="Passing invalid request to validate 400 error">
+                     <http:request-builder>
+                           <http:header headerName="Accept" value="application/json" />
+                           <http:header headerName="Content-Type" value="application/json" />
+                     </http:request-builder>
+                     <http:success-status-code-validator
+                           values="400" />
+              </http:request>
+              <object-to-string-transformer doc:name="HTTP Response to String" />
+              <munit:assert-true message="The HTTP Status code is not correct!"
+                     condition="#[messageInboundProperty('http.status').is(eq(400))]"
+                     doc:name="Assert HTTP Status Eq 400" />
+              <logger message="#['Response Payload\nException : '+payload+' : Invalid Json Structure.\n']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(400)" doc:name="Response Payload" />
+              <munit:assert-on-equals message="The response payload is not correct!"
+                     expectedValue="#['{ &quot;message&quot;: &quot;Bad request&quot; }']"
+                     actualValue="#[payload]" doc:name="Assert That Payload is as Expected" />
+       </munit:test>
+       <munit:test name="Globalexception-apikit-TestCase(415)"
+              description="Verifying functionality of [post:/Deposits:application/json:api-config-415-application/json]" >
+              <munit:set payload="#['&lt;xml&gt;A&lt;/xml&gt;']" mimeType="application/xml"
+                     doc:name="Set Request Message" />
+              <logger
+                     message="#['Request Payload\n : ' +payload+'\n']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(415)" doc:name="Request Payload" />
+              <http:request config-ref="HTTP_Request_Configuration"
+                     path="/Notify" method="POST"
+                     doc:name="Passing Invalid MIME Type to Validate 415 Error">
+                     <http:success-status-code-validator
+                           values="415" />
+              </http:request>
+              <object-to-string-transformer doc:name="HTTP Response to String" />
+              <munit:assert-true message="The HTTP Status code is not correct!"
+                     condition="#[messageInboundProperty('http.status').is(eq(415))]"
+                     doc:name="Assert HTTP Status Eq 415" />
+              <logger message="#['Response Payload\n Exception :'+payload+' : Unsupported Media Type.\n']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(415)" doc:name="Response Payload" />
+              <munit:assert-on-equals message="The response payload is not correct!"
+                     expectedValue="#['{ &quot;message&quot;: &quot;Unsupported media type&quot; }']"
+                     actualValue="#[payload]" doc:name="Assert That Payload is as Expected" />
+       </munit:test>
+       <munit:test name="Globalexception-apikit-TestCase(406)"
+              description="Verifying functionality of [post:/Deposits:application/json:api-config-406-application/json]" >
+              <munit:set
+                     payload="#['{&quot;amount&quot;:&quot;0.01&quot;,&quot;currency&quot;:&quot;HKD&quot;,&quot;merchant_reference&quot;:&quot;TESTING_RPH1770&quot;,&quot;request_reference&quot;:&quot;1e768009-f8d3-4bb9-a456-cc6eb5bde048&quot;,&quot;status&quot;:&quot;1&quot;,&quot;sign&quot;:&quot;22bd8aaa8104eeaaf21138eddbd47738fe7cc519258f9a398fe20389dcc17579f1b7786698d6a210abdb533f61d90a7292db1a782cfd1338d6a17f8da445fd41&quot;}']"
+                     doc:name="Set Request Message" />
+                     <json:json-to-object-transformer
+                     returnClass="java.util.HashMap" doc:name="JSON to Object" />
+              <logger
+                     
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(406)" doc:name="Request Payload" message="#['Request Payload\n amount: '+payload.amount+'\n currency: '+payload.currency+'\n merchant_reference: '+payload.merchant_reference+'\n request_reference: '+payload.request_reference+'\n status: '+payload.status+'\n sign: '+payload.sign +'\n']"/>
+              <http:request config-ref="HTTP_Request_Configuration"
+                     path="/Notify" method="POST"
+                     doc:name="Passing Invalid header Value to Validate 406 Error">
+                     <http:request-builder>
+                <http:header headerName="Accept" value="application/xml"/>
+                <http:header headerName="Content-Type" value="application/x-www-form-urlencoded"/>
+                     </http:request-builder>
+                     <http:success-status-code-validator
+                           values="406" />
+              </http:request>
+              <object-to-string-transformer doc:name="HTTP Response to String" />
+              <munit:assert-true message="The HTTP Status code is not correct!"
+                     condition="#[messageInboundProperty('http.status').is(eq(406))]"
+                     doc:name="Assert HTTP Status Eq 406" />
+              <logger message="#['Response Payload\nException :'+payload+' : Content not Acceptable.\n']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(406)" doc:name="Response Payload" />
+              <munit:assert-on-equals message="The response payload is not correct!"
+                     expectedValue="#['{ &quot;message&quot;: &quot;Not acceptable&quot; }']"
+                     actualValue="#[payload]" doc:name="Assert That Payload is as Expected" />
+       </munit:test>
+       <munit:test name="Globalexception-apikit-TestCase(201)"
+              description="Test" >
+              <munit:set
+                     payload="#['{&quot;CustomerId&quot;:&quot;123456&quot;,&quot;OrderId&quot;:1198765450081,&quot;Amount&quot;:100,&quot;ProductId&quot;:287,&quot;LegalEntity&quot;:&quot;AxiCorp Limited&quot;,&quot;Currency&quot;:&quot;VND&quot;,&quot;ClientIp&quot;:&quot;123.123.123.123&quot;,&quot;ClientSessionId&quot;:&quot;QWE!@#wasdferty&quot;,&quot;SystemSourceId&quot;:6,&quot;InstrumentToken&quot;:&quot;&quot;,&quot;AdditionalInfo&quot;:{&quot;ClientFirstName&quot;:&quot;Someone&quot;,&quot;ClientLastName&quot;:&quot;Buying&quot;,&quot;ClientPhone&quot;:&quot;9876543223&quot;,&quot;ClientAddress&quot;:&quot;1,Bay Street&quot;,&quot;ClientEmail&quot;:&quot;someone@gmail.com&quot;,&quot;ClientCountry&quot;:&quot;US&quot;,&quot;ClientState&quot;:&quot;NY&quot;,&quot;ProductSelected&quot;:&quot;DebitCard&quot;}}']"
+                     doc:name="Set Request Message" mimeType="application/json" />
+                     <json:json-to-object-transformer
+                     returnClass="java.util.HashMap" doc:name="JSON to Object" />
+              <logger
+                     message="#['Request Payload\n CustomerId : '+payload.CustomerId+'\n OrderId : '+payload.OrderId+'\n Amount : '+payload.Amount+'\n Currency : '+payload.Currency+'\n ClientIp :'+payload.ClientIp+'\n ClientFirstName:'+payload.AdditionalInfo.ClientFirstName+'\n ClientLastName:'+payload.AdditionalInfo.ClientLastName+'\n ClientPhone:'+payload.AdditionalInfo.ClientPhone+'\n ClientEmail:'+payload.AdditionalInfo.ClientEmail+'\n ProductSelected : '+payload.AdditionalInfo.ProductSelected+'\n']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(201)" doc:name="Request Payload" />
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+              <http:request config-ref="HTTP_Request_Configuration"
+                     path="/Deposits" method="POST" doc:name="Passing Valid Request to Validate HTTP Status 201">
+                     <http:request-builder>
+                           <http:header headerName="Accept" value="application/json" />
+                           <http:header headerName="Content-Type" value="application/json" />
+
+                     </http:request-builder>
+                     <http:success-status-code-validator
+                           values="201" />
+              </http:request>
+              <object-to-string-transformer doc:name="HTTP Response to String" />
+              <munit:assert-true message="The HTTP Status code is not correct!"
+                     condition="#[messageInboundProperty('http.status').is(eq(201))]"
+                     doc:name="Assert HTTP Status Eq 201" />
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+              <logger message="#['Response Payload \n OrderId : '+payload.OrderId+'\n ClientRedirectURL : '+payload.ClientRedirectURL+'\n ClientRedirectType : '+payload.ClientRedirectType+'\n PostParameters : '+payload.PostParameters+'\n']" level="INFO" category="MUnit || Globalexception-apikit-TestCase(201)"
+                     doc:name="Response Payload" />
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+              <munit:assert-on-equals message="The response payload is not correct!"
+                     expectedValue="#['{&quot;ClientRedirectType&quot;:&quot;POST&quot;,&quot;AdditionalInfo&quot;:{},&quot;PaymentCode&quot;:&quot;&quot;,&quot;PostPayload&quot;:&quot;&quot;,&quot;RecommendedDisplayWidth&quot;:0,&quot;OrderId&quot;:1198765450081,&quot;ClientRedirectURL&quot;:&quot;https://payment.pa-sys.com/app/page/3f032457-c233-42d4-b7b4-3b1612d59b02&quot;,&quot;PaymentMessage&quot;:&quot;&quot;,&quot;RecommendedDisplayType&quot;:&quot;Redirect&quot;,&quot;ProviderReference&quot;:&quot;&quot;,&quot;PostParameters&quot;:&quot;amount=100&amp;currency=VND&amp;customer_address=1,Bay Street&amp;customer_country=US&amp;customer_email=someone@gmail.com&amp;customer_first_name=Someone&amp;customer_ip=123.123.123.123&amp;customer_last_name=Buying&amp;customer_phone=9876543223&amp;customer_state=NY&amp;merchant_reference=1198765450081&amp;network=DebitCard&amp;return_url=https://demo.shop.com/payment/return&amp;sign=901d9ca7acbdea3fced44e417b40ec3b1eb6a367d8c10ce45b858f7b019a61da6da634b52c3c87682bf50773d3bc2d2136b53704d39e61bf1dc78157482a529e&quot;,&quot;PaymentStatus&quot;:&quot;REDIRECT&quot;,&quot;RecommendedDisplayHeight&quot;:0}']"
+                     actualValue="#[payload]" doc:name="Assert That Payload is as Expected" />
+       </munit:test>
+       <munit:test name="Globalexception-apikit-TestCase(500)"
+              description="Verifying functionality of 500 GlobalException" >
+              <munit:set
+                     payload="#['{&quot;WithdrawalRequests&quot;:[{&quot;WithdrawalId&quot;:658961259131346346,&quot;LegalEntity&quot;:&quot;AxiCorp Financial Services Pty Ltd&quot;,&quot;ProviderReference&quot;:&quot;124xyz&quot;,&quot;Currency&quot;:&quot;MYR&quot;,&quot;Amount&quot;:800.85,&quot;AdditionalInfo&quot;:{&quot;ClientName&quot;:&quot;Stephen test&quot;,&quot;BankName&quot;:&quot;Hong Leong&quot;,&quot;ClientAccountNumber&quot;:&quot;1241414141&quot;}}]}']"
+                     mimeType="application/json" doc:name="Set Request Message" />
+                     <json:json-to-object-transformer
+                     returnClass="java.util.HashMap" doc:name="JSON to Object" />
+              <logger
+                     
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(500)" doc:name="Request Payload" message="#['Request Payload\nWithdrawalId : '+payload.WithdrawalRequests[0].WithdrawalId+'\nCurrency : '+payload.WithdrawalRequests[0].Currency+'\nAmount : '+payload.WithdrawalRequests[0].Amount+'\nClientName :'+payload.WithdrawalRequests[0].AdditionalInfo.ClientName+'\nBankName:'+payload.WithdrawalRequests[0].AdditionalInfo.BankName+'\nClientAccountNumber:'+payload.WithdrawalRequests[0].AdditionalInfo.ClientAccountNumber +'\n']"/>
+       <json:object-to-json-transformer doc:name="Object to JSON"/>
+              <http:request config-ref="HTTP_Request_Configuration"
+                     path="/Withdrawals" method="POST" doc:name="Checking Internal Server Error">
+                     <http:success-status-code-validator
+                           values="500" />
+              </http:request>
+              <object-to-string-transformer doc:name="HTTP Response to String" />
+              <munit:assert-true message="The HTTP Status code is not correct!"
+                     condition="#[messageInboundProperty('http.status').is(eq(500))]"
+                     doc:name="Assert HTTP Status Eq 500" />
+              <logger message="#['Response Payload\nException :'+payload+' :  Internal Server Error.\n']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(500)" doc:name="Response Payload" />
+              <munit:assert-on-equals message="The response payload is not correct!"
+                     expectedValue="#['{ &quot;message&quot;: &quot;Internal Service Error - #[exception.?getCause().?getMessage()]&quot; }']"
+                     actualValue="#[payload]" doc:name="Assert That Payload is as Expected" />
+       </munit:test>
+       <munit:test name="Globalexception-apikit-TestCase(NullRequestPayload)"
+              description="Verifying functionality of [post:/Deposits:application/json:api-config-404-application/json]" >
+              <set-payload
+                     value="#['{&quot;CustomerId&quot;:&quot;123456&quot;,&quot;OrderId&quot;:&quot;&quot;,&quot;Amount&quot;:100,&quot;ProductId&quot;:287,&quot;LegalEntity&quot;:&quot;AxiCorp Limited&quot;,&quot;Currency&quot;:&quot;VND&quot;,&quot;ClientIp&quot;:&quot;123.123.123.123&quot;,&quot;ClientSessionId&quot;:&quot;QWE!@#wasdferty&quot;,&quot;SystemSourceId&quot;:6,&quot;InstrumentToken&quot;:&quot;&quot;,&quot;AdditionalInfo&quot;:{&quot;ClientFirstName&quot;:&quot;Someone&quot;,&quot;ClientLastName&quot;:&quot;Buying&quot;,&quot;ClientPhone&quot;:&quot;9876543223&quot;,&quot;ClientAddress&quot;:&quot;1,Bay Street&quot;,&quot;ClientEmail&quot;:&quot;someone@gmail.com&quot;,&quot;ClientCountry&quot;:&quot;US&quot;,&quot;ClientState&quot;:&quot;NY&quot;,&quot;ProductSelected&quot;:&quot;DebitCard&quot;}}']"
+                     doc:name="Set Payload" />
+                     <json:json-to-object-transformer
+                     returnClass="java.util.HashMap" doc:name="JSON to Object" />
+              <logger
+                     message="#['Request Payload\n CustomerId : '+payload.CustomerId+'\n OrderId : '+payload.OrderId+'\n Amount : '+payload.Amount+'\n Currency : '+payload.Currency+'\n ClientIp :'+payload.ClientIp+'\n ClientFirstName:'+payload.AdditionalInfo.ClientFirstName+'\n ClientLastName:'+payload.AdditionalInfo.ClientLastName+'\n ClientPhone:'+payload.AdditionalInfo.ClientPhone+'\n ClientEmail:'+payload.AdditionalInfo.ClientEmail+'\n ProductSelected : '+payload.AdditionalInfo.ProductSelected+'\n']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(NullRequestPayload)" doc:name="Request Payload" />
+              <http:request config-ref="HTTP_Request_Configuration"
+                     path="/Deposits" method="POST"
+                     doc:name="Passing Null Value in The Request Body to Validate Bad Request">
+                     <http:request-builder>
+                           <http:header headerName="Accept" value="application/json" />
+                           <http:header headerName="Content-Type" value="application/json" />
+                     </http:request-builder>
+                     <http:success-status-code-validator
+                           values="400" />
+              </http:request>
+              <object-to-string-transformer doc:name="HTTP Response to String" />
+              <munit:assert-true message="The HTTP Status code is not correct!"
+                     condition="#[messageInboundProperty('http.status').is(eq(400))]"
+                     doc:name="Assert HTTP Status Eq 400" />
+              <logger message="#['Response Payload\nException :'+payload+' : OrderId is Null in Input Request.\n']"
+                     level="INFO" category="MUnit || Globalexception-apikit-TestCase(NullRequestPayload)"
+                     doc:name="Response Payload" />
+              <munit:assert-on-equals message="The response payload is not correct!"
+                     expectedValue="#['{ &quot;message&quot;: &quot;Bad request&quot; }']"
+                     actualValue="#[payload]" doc:name="Assert That Payload is as Expected" />
+       </munit:test>
+
+
+</mule>

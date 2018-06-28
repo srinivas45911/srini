@@ -1,0 +1,18 @@
+{
+  "CustomerId": "123456",
+  "OrderId": 98765,
+  "ProductId": 287,
+  "LegalEntity": "AxiCorp Limited",
+  "Currency": "vnd",
+  "Amount": 10000,
+  "ClientIp": "201.36.21.45",
+  "ClientSessionId": "QWE!@#wasdferty",
+  "SystemSourceId": 6,
+  "InstrumentToken": "",
+  "AdditionalInfo": {
+    "ClientFirstName": "Nguyen",
+    "ClientLastName": "Van A",
+    "ClientMobilePhone": "0987654321",
+    "ClientEmail": "mail@yahoo.com"
+  }
+}
